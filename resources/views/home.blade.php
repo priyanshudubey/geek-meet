@@ -96,37 +96,40 @@
 
         // Function to Render a Post
         function renderPost(post) {
-            const postHtml = `
-                <div class="p-4 border rounded mb-4 bg-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-gray-800">${post.geek.name}</h4>
-                            <p class="text-gray-600 text-sm">${new Date(post.created_at).toLocaleString()}</p>
-                        </div>
-                        ${post.geek_id === {{ Auth::id() }} ? `
-                            <button class="text-blue-500 hover:underline">Edit</button>` : ''}
-                    </div>
-                    <p class="mt-2 text-gray-700">${post.content}</p>
-                    ${post.picture ? `<img src="/storage/${post.picture}" alt="Post Image" class="mt-4 max-w-full rounded">` : ''}
-                    <div class="mt-4 flex space-x-4">
-                        <button class="text-blue-500 hover:underline">Like</button>
-                        <button class="text-blue-500 hover:underline">Comment</button>
-                    </div>
+    const user = post.user || post.geek; // Adjust based on your relationship
+    const postHtml = `
+        <div class="p-4 border rounded mb-4 bg-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-gray-800">${user ? user.name : 'Unknown User'}</h4>
+                    <p class="text-gray-600 text-sm">${new Date(post.created_at).toLocaleString()}</p>
                 </div>
-            `;
-            document.getElementById('postsFeed').insertAdjacentHTML('afterbegin', postHtml);
-        }
+                ${post.user_id === {{ Auth::id() }} ? `
+                    <button class="text-blue-500 hover:underline">Edit</button>` : ''}
+            </div>
+            <p class="mt-2 text-gray-700">${post.content}</p>
+            ${post.picture ? `<img src="/storage/${post.picture}" alt="Post Image" class="mt-4 max-w-full rounded">` : ''}
+            <div class="mt-4 flex space-x-4">
+                <button class="text-blue-500 hover:underline">Like</button>
+                <button class="text-blue-500 hover:underline">Comment</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('postsFeed').insertAdjacentHTML('afterbegin', postHtml);
+}
+
 
         // Fetch Existing Posts on Page Load
         document.addEventListener('DOMContentLoaded', () => {
-            fetch('/posts')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        data.posts.forEach(post => renderPost(post));
-                    }
-                })
-                .catch(error => console.error('Error:', error));
+            fetch('/posts') // Fetch posts from the backend
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Render each post
+                data.posts.forEach(post => renderPost(post));
+            }
+        })
+        .catch(error => console.error('Error fetching posts:', error));
         });
     </script>
 
