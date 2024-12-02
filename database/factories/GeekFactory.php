@@ -17,7 +17,6 @@ class GeekFactory extends Factory
         return [
             'name' => $this->faker->name,
             'dob' => $this->faker->date(),
-            'mobile' => $this->faker->phoneNumber,
             'email' => $this->faker->unique()->safeEmail(),
             'password' => bcrypt('password'),
         ];

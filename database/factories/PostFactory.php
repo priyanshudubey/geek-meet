@@ -16,8 +16,9 @@ class PostFactory extends Factory
     public function definition(): array
     {
         return [
-            'geek_id' => Geek::factory(), // Associate with a Geek
+            'geek_id' => Geek::factory(),
             'content' => $this->faker->paragraph(),
+            'picture' => $this->faker->imageUrl(), // Random image URL
             'created_at' => now(),
             'updated_at' => now(),
         ];
