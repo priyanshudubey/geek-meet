@@ -32,3 +32,5 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/posts', [PostController::class, 'store'])->middleware('auth');
 Route::get('/posts', [PostController::class, 'fetchPosts'])->middleware('auth');
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
+Route::put('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
+Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');

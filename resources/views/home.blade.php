@@ -65,6 +65,67 @@
 
     <!-- JavaScript for Posts -->
     <script>
+        // Load posts from the server
+        function loadPosts() {
+            fetch('/posts')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        data.posts.forEach(post => renderPost(post));
+                    }
+                })
+                .catch(error => console.error('Error fetching posts:', error));
+        }
+
+        // Render a single post
+        function renderPost(post) {
+            const user = post.user || post.geek;
+            const postHtml = `
+                <div class="p-4 border rounded mb-4 bg-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-gray-800">${user ? user.name : 'Unknown User'}</h4>
+                            <p class="text-gray-600 text-sm">${new Date(post.created_at).toLocaleString()}</p>
+                        </div>
+                        ${
+                            post.user_id === {{ Auth::id() }} ? `
+                            <div class="relative">
+                                <button id="settingsButton-${post.id}" class="text-gray-500 hover:text-gray-800">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <div id="settingsDropdown-${post.id}" class="hidden absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
+                                    <button class="block px-4 py-2 text-left text-gray-800 hover:bg-gray-100 edit-post-btn" data-id="${post.id}">Edit</button>
+                                    <button class="block px-4 py-2 text-left text-red-600 hover:bg-gray-100 delete-post-btn" data-id="${post.id}">Delete</button>
+                                </div>
+                            </div>
+                            ` : ''
+                        }
+                    </div>
+                    <p class="mt-2 text-gray-700">${post.content}</p>
+                    ${
+                        post.picture
+                            ? `<img src="/storage/${post.picture}" alt="Post Image" class="mt-4 w-32 h-32 rounded">`
+                            : ''
+                    }
+                    <div class="mt-4 flex space-x-4">
+                        <button class="text-blue-500 hover:underline">Like</button>
+                        <button class="text-blue-500 hover:underline">Comment</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('postsFeed').insertAdjacentHTML('afterbegin', postHtml);
+
+            // Add event listeners for dropdown
+            const settingsButton = document.getElementById(`settingsButton-${post.id}`);
+            const settingsDropdown = document.getElementById(`settingsDropdown-${post.id}`);
+            if (settingsButton && settingsDropdown) {
+                settingsButton.addEventListener('click', () => {
+                    settingsDropdown.classList.toggle('hidden');
+                });
+            }
+        }
+
+        // Post a new post
         document.getElementById('postButton').addEventListener('click', () => {
             const content = document.getElementById('postContent').value;
             const picture = document.getElementById('postPicture').files[0];
@@ -91,62 +152,70 @@
                         document.getElementById('postPicture').value = '';
                     }
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => console.error('Error posting:', error));
         });
 
-        // Function to Render a Post
-        function renderPost(post) {
-    const user = post.user || post.geek; // Adjust based on your relationship
-    const postHtml = `
-        <div class="p-4 border rounded mb-4 bg-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h4 class="font-bold text-gray-800">${user ? user.name : 'Unknown User'}</h4>
-                    <p class="text-gray-600 text-sm">${new Date(post.created_at).toLocaleString()}</p>
-                </div>
-                ${post.user_id === {{ Auth::id() }} ? `
-                    <button class="text-blue-500 hover:underline">Edit</button>` : ''}
-            </div>
-            <p class="mt-2 text-gray-700">${post.content}</p>
-            ${post.picture ? `<img src="/storage/${post.picture}" alt="Post Image" class="mt-4 max-w-full rounded">` : ''}
-            <div class="mt-4 flex space-x-4">
-                <button class="text-blue-500 hover:underline">Like</button>
-                <button class="text-blue-500 hover:underline">Comment</button>
-            </div>
-        </div>
-    `;
-    document.getElementById('postsFeed').insertAdjacentHTML('afterbegin', postHtml);
-}
-
-
-        // Fetch Existing Posts on Page Load
-        document.addEventListener('DOMContentLoaded', () => {
-            fetch('/posts') // Fetch posts from the backend
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Render each post
-                data.posts.forEach(post => renderPost(post));
-            }
-        })
-        .catch(error => console.error('Error fetching posts:', error));
-        });
-    </script>
-
-    <!-- Dropdown Script -->
-    <script>
-        const dropdownButton = document.getElementById('dropdownButton');
-        const dropdownMenu = document.getElementById('dropdownMenu');
-
-        dropdownButton.addEventListener('click', () => {
-            dropdownMenu.classList.toggle('hidden');
-        });
-
-        window.addEventListener('click', (e) => {
-            if (!dropdownButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
-                dropdownMenu.classList.add('hidden');
+        // Edit and Delete Event Handlers
+        document.addEventListener('click', (event) => {
+            if (event.target.classList.contains('edit-post-btn')) {
+                const postId = event.target.getAttribute('data-id');
+                editPost(postId);
+            } else if (event.target.classList.contains('delete-post-btn')) {
+                const postId = event.target.getAttribute('data-id');
+                deletePost(postId);
             }
         });
+
+        function editPost(postId) {
+            const newContent = prompt('Enter the new content for your post:');
+            if (newContent) {
+                fetch(`/posts/${postId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content: newContent }),
+                })
+                .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update post');
+                }
+                return response.json();
+            })
+                    .then(data => {
+                        if (data.success) {
+                            alert('Post updated successfully!');
+                            document.getElementById('postsFeed').innerHTML = ''; // Clear posts feed
+                            loadPosts(); // Reload posts
+                        }
+                    })
+                    .catch(error => console.error('Error updating post:', error));
+            }
+        }
+
+        function deletePost(postId) {
+            if (confirm('Are you sure you want to delete this post?')) {
+                fetch(`/posts/${postId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Post deleted successfully!');
+                            document.getElementById('postsFeed').innerHTML = ''; // Clear posts feed
+                            loadPosts(); // Reload posts
+                        }
+                    })
+                    .catch(error => console.error('Error deleting post:', error));
+            }
+        }
+
+        // Load posts on page load
+        document.addEventListener('DOMContentLoaded', loadPosts);
     </script>
 </body>
 </html>
