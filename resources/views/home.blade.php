@@ -79,51 +79,117 @@
 
         // Render a single post
         function renderPost(post) {
-            const user = post.user || post.geek;
-            const postHtml = `
-                <div class="p-4 border rounded mb-4 bg-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-gray-800">${user ? user.name : 'Unknown User'}</h4>
-                            <p class="text-gray-600 text-sm">${new Date(post.created_at).toLocaleString()}</p>
-                        </div>
-                        ${
-                            post.user_id === {{ Auth::id() }} ? `
-                            <div class="relative">
-                                <button id="settingsButton-${post.id}" class="text-gray-500 hover:text-gray-800">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                <div id="settingsDropdown-${post.id}" class="hidden absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
-                                    <button class="block px-4 py-2 text-left text-gray-800 hover:bg-gray-100 edit-post-btn" data-id="${post.id}">Edit</button>
-                                    <button class="block px-4 py-2 text-left text-red-600 hover:bg-gray-100 delete-post-btn" data-id="${post.id}">Delete</button>
-                                </div>
-                            </div>
-                            ` : ''
-                        }
-                    </div>
-                    <p class="mt-2 text-gray-700">${post.content}</p>
-                    ${
-                        post.picture
-                            ? `<img src="/storage/${post.picture}" alt="Post Image" class="mt-4 w-32 h-32 rounded">`
-                            : ''
-                    }
-                    <div class="mt-4 flex space-x-4">
-                        <button class="text-blue-500 hover:underline">Like</button>
-                        <button class="text-blue-500 hover:underline">Comment</button>
-                    </div>
+    const user = post.user || post.geek; // Adjust based on your relationship
+    const postHtml = `
+        <div class="p-4 border rounded mb-4 bg-white" data-post-id="${post.id}">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-gray-800">${user ? user.name : 'Unknown User'}</h4>
+                    <p class="text-gray-600 text-sm">${new Date(post.created_at).toLocaleString()}</p>
                 </div>
-            `;
-            document.getElementById('postsFeed').insertAdjacentHTML('afterbegin', postHtml);
-
-            // Add event listeners for dropdown
-            const settingsButton = document.getElementById(`settingsButton-${post.id}`);
-            const settingsDropdown = document.getElementById(`settingsDropdown-${post.id}`);
-            if (settingsButton && settingsDropdown) {
-                settingsButton.addEventListener('click', () => {
-                    settingsDropdown.classList.toggle('hidden');
-                });
+                ${
+                    post.user_id === {{ Auth::id() }} ? `
+                    <div class="relative">
+                        <button id="settingsButton-${post.id}" class="text-gray-500 hover:text-gray-800">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <div id="settingsDropdown-${post.id}" class="hidden absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
+                            <button class="block px-4 py-2 text-left text-gray-800 hover:bg-gray-100 edit-post-btn" data-id="${post.id}">Edit</button>
+                            <button class="block px-4 py-2 text-left text-red-600 hover:bg-gray-100 delete-post-btn" data-id="${post.id}">Delete</button>
+                        </div>
+                    </div>
+                    ` : ''
+                }
+            </div>
+            <!-- Editable Post Content -->
+            <div class="mt-2">
+                <p class="text-gray-700 post-content">${post.content}</p>
+                <textarea class="hidden w-full p-2 border rounded edit-content">${post.content}</textarea>
+            </div>
+            <!-- Save and Cancel Buttons -->
+            <div class="hidden mt-2 flex space-x-2 edit-actions">
+                <button class="bg-blue-500 text-white py-1 px-3 rounded save-edit-btn" data-id="${post.id}">Save</button>
+                <button class="bg-gray-500 text-white py-1 px-3 rounded cancel-edit-btn" data-id="${post.id}">Cancel</button>
+            </div>
+            ${
+                post.picture
+                    ? `<img src="/storage/${post.picture}" alt="Post Image" class="mt-4 w-32 h-32 rounded">`
+                    : ''
             }
-        }
+            <div class="mt-4 flex space-x-4">
+                <button class="text-blue-500 hover:underline">Like</button>
+                <button class="text-blue-500 hover:underline">Comment</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('postsFeed').insertAdjacentHTML('afterbegin', postHtml);
+
+    // Add dropdown event listener
+    const settingsButton = document.getElementById(`settingsButton-${post.id}`);
+    const settingsDropdown = document.getElementById(`settingsDropdown-${post.id}`);
+    if (settingsButton && settingsDropdown) {
+        settingsButton.addEventListener('click', () => {
+            settingsDropdown.classList.toggle('hidden');
+        });
+    }
+
+    // Add Edit Button Functionality
+    const editButton = document.querySelector(`[data-id="${post.id}"].edit-post-btn`);
+    const deleteButton = document.querySelector(`[data-id="${post.id}"].delete-post-btn`);
+    const postElement = document.querySelector(`[data-post-id="${post.id}"]`);
+    const postContent = postElement.querySelector('.post-content');
+    const editContent = postElement.querySelector('.edit-content');
+    const editActions = postElement.querySelector('.edit-actions');
+
+    if (editButton) {
+        editButton.addEventListener('click', () => {
+            postContent.classList.add('hidden');
+            editContent.classList.remove('hidden');
+            editActions.classList.remove('hidden');
+        });
+    }
+
+    // Add Cancel Button Functionality
+    const cancelButton = postElement.querySelector('.cancel-edit-btn');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', () => {
+            postContent.classList.remove('hidden');
+            editContent.classList.add('hidden');
+            editActions.classList.add('hidden');
+        });
+    }
+
+    // Add Save Button Functionality
+    const saveButton = postElement.querySelector('.save-edit-btn');
+    if (saveButton) {
+        saveButton.addEventListener('click', () => {
+            const newContent = editContent.value;
+            fetch(`/posts/${post.id}`, {
+                method: 'PUT',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content: newContent }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to update post');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        postContent.textContent = newContent;
+                        postContent.classList.remove('hidden');
+                        editContent.classList.add('hidden');
+                        editActions.classList.add('hidden');
+                    }
+                })
+                .catch(error => console.error('Error updating post:', error));
+        });
+    }
+}
 
         // Post a new post
         document.getElementById('postButton').addEventListener('click', () => {
@@ -166,43 +232,67 @@
             }
         });
 
-        function editPost(postId) {
-            const newContent = prompt('Enter the new content for your post:');
-            if (newContent) {
-                fetch(`/posts/${postId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ content: newContent }),
-                })
-                .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to update post');
-                }
-                return response.json();
-            })
-                    .then(data => {
-                        if (data.success) {
-                            alert('Post updated successfully!');
-                            document.getElementById('postsFeed').innerHTML = ''; // Clear posts feed
-                            loadPosts(); // Reload posts
-                        }
-                    })
-                    .catch(error => console.error('Error updating post:', error));
-            }
-        }
+//         function editPost(postId) {
+//     // Find the post content
+//     const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+//     const currentContent = postElement ? postElement.querySelector('.post-content').textContent : '';
 
-        function deletePost(postId) {
-            if (confirm('Are you sure you want to delete this post?')) {
-                fetch(`/posts/${postId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    },
-                })
-                    .then(response => response.json())
+//     // Prompt the user with the current content
+//     const newContent = prompt('Edit your post:', currentContent);
+
+//     if (newContent !== null) { // Allow the user to cancel editing
+//         fetch(`/posts/${postId}`, {
+//             method: 'PUT',
+//             headers: {
+//                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+//                 'Content-Type': 'application/json',
+//             },
+//             body: JSON.stringify({ content: newContent }),
+//         })
+//             .then(response => {
+//                 if (!response.ok) {
+//                     throw new Error('Failed to update post');
+//                 }
+//                 return response.json();
+//             })
+//             .then(data => {
+//                 if (data.success) {
+//                     alert('Post updated successfully!');
+//                     // Update the post content on the page without reloading
+//                     if (postElement) {
+//                         postElement.querySelector('.post-content').textContent = newContent;
+//                     }
+//                 }
+//             })
+//             .catch(error => console.error('Error updating post:', error));
+//     }
+// }
+function editPost(postId) {
+    const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+    const postContent = postElement.querySelector('.post-content');
+    const editContent = postElement.querySelector('.edit-content');
+    const editActions = postElement.querySelector('.edit-actions');
+
+    // Show the edit textarea and buttons
+    postContent.classList.add('hidden');
+    editContent.classList.remove('hidden');
+    editActions.classList.remove('hidden');
+}
+
+                function deletePost(postId) {
+                    if (confirm('Are you sure you want to delete this post?')) {
+                        fetch(`/posts/${postId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            },
+                        })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to delete post');
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
                             alert('Post deleted successfully!');
@@ -211,9 +301,8 @@
                         }
                     })
                     .catch(error => console.error('Error deleting post:', error));
-            }
-        }
-
+                    }
+                }
         // Load posts on page load
         document.addEventListener('DOMContentLoaded', loadPosts);
     </script>

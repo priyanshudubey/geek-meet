@@ -6,9 +6,11 @@ use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PostController extends Controller
 {
+    use AuthorizesRequests;
     public function store(Request $request)
 {
     $request->validate([
@@ -57,10 +59,19 @@ class PostController extends Controller
 
 public function destroy(Post $post)
 {
-    $this->authorize('delete', $post); // Ensure user can delete this post
+    // Authorize the user to delete the post
+    \Log::info('Attempting to delete post', [
+        'post_id' => $post->id,
+        'user_id' => Auth::id(),
+        'post_owner_id' => $post->user_id,
+    ]);
 
+    $this->authorize('delete', $post);
+
+    // Delete the post
     $post->delete();
 
+    // Return a success response
     return response()->json(['success' => true]);
 }
 
