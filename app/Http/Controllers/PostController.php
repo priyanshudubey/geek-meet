@@ -35,15 +35,19 @@ class PostController extends Controller
     ]);
 }
 
-    public function fetchPosts()
-    {
-        $posts = Post::with('geek')->latest()->get();
+public function fetchPosts()
+{
+    $posts = Post::with(['user', 'likes', 'comments.user'])->get()->map(function ($post) {
+        $post->likes_count = $post->likes->count();
+        $post->is_liked_by_user = $post->likes->where('user_id', Auth::id())->isNotEmpty();
+        return $post;
+    });
 
-        return response()->json([
-            'success' => true,
-            'post' => $post,
-        ]);
-    }
+    return response()->json([
+        'success' => true,
+        'posts' => $posts,
+    ]);
+}
 
     public function update(Request $request, Post $post)
 {

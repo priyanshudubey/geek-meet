@@ -6,14 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Like extends Model
 {
     use HasFactory;
-    // A Like belongs to a Geek
-    public function geek()
+
+    protected $fillable = ['user_id', 'post_id'];
+
+    public function post()
     {
-        return $this->belongsTo(Geek::class);
+        return $this->belongsTo(Post::class);
     }
-    // A Like can be associated with either a Post or a Comment
-    public function likeable()
+
+    public function user()
     {
-        return $this->morphTo();
+        return $this->belongsTo(User::class);
     }
 }

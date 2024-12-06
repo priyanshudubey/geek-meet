@@ -19,8 +19,6 @@ class LikeFactory extends Factory
         $post = Post::inRandomOrder()->first(); // Get a random Post
         return [
             'geek_id' => Geek::factory(), // Associate with a Geek
-            'likeable_id' => $post ? $post->id : 1, 
-            'likeable_type' => Post::class,
         ];
     }
 }

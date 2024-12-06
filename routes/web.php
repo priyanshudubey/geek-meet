@@ -3,6 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\LikeController;
+use App\Models\Post;
+use App\Http\Controllers\NotificationController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -34,3 +38,11 @@ Route::get('/posts', [PostController::class, 'fetchPosts'])->middleware('auth');
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
 Route::put('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
 Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
+
+Route::post('/posts/{post}/comments', [CommentController::class, 'store']);
+
+Route::post('/posts/{post}/like', [LikeController::class, 'toggleLike'])->middleware('auth');
+
+Route::get('/notifications', [NotificationController::class, 'index']);
+Route::post('/notifications/read', [NotificationController::class, 'markAsRead']);
+Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');

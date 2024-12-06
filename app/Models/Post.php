@@ -7,25 +7,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Post extends Model
 {
-    use HasFactory;
-
     public function user()
-{
-    return $this->belongsTo(User::class, 'user_id');
-}
-    // A Post belongs to a Geek
-    public function geek()
     {
-        return $this->belongsTo(Geek::class, 'geek_id');
+        return $this->belongsTo(User::class);
     }
-    // A Post can have many Comments
+
+    public function likes()
+    {
+        return $this->hasMany(Like::class);
+    }
+
     public function comments()
     {
         return $this->hasMany(Comment::class);
-    }
-    // A Post can have many Likes
-    public function likes()
-    {
-        return $this->morphMany(Like::class, 'likeable');
     }
 }

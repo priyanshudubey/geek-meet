@@ -21,6 +21,35 @@
                 <span>Geek Meet</span>
             </a>
 
+            <!-- Notifications -->
+            <div class="relative mr-4">
+                <button
+                    id="notificationButton"
+                    class="relative bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded focus:outline-none"
+                >
+                    <i class="fas fa-bell"><span class="text-sm mx-2">Notification</span></i>
+                    <span
+                        id="notificationCount"
+                        class="absolute top-0 right-0 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center"
+                    >0</span>
+                </button>
+                <!-- Notification Dropdown -->
+                <div
+                    id="notificationDropdown"
+                    class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-10"
+                >
+                    <div id="notificationList">
+                        <p class="px-4 py-2 text-gray-600">No new notifications</p>
+                    </div>
+                    <button
+                        id="markAsReadButton"
+                        class="block w-full text-center bg-red-500 text-white py-2 hover:bg-red-600"
+                    >
+                        Mark All as Read
+                    </button>
+                </div>
+            </div>
+
             <!-- User Dropdown -->
             <div class="relative">
                 <button
@@ -32,7 +61,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
-                <!-- Dropdown Menu -->
                 <div
                     id="dropdownMenu"
                     class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-10"
@@ -63,144 +91,193 @@
         <div id="postsFeed"></div>
     </main>
 
-    <!-- JavaScript for Posts -->
+    <!-- JavaScript -->
     <script>
-        // Load posts from the server
+        // Notifications functionality
+        document.getElementById('notificationButton').addEventListener('click', () => {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.classList.toggle('hidden');
+        });
+
+        function loadNotifications() {
+            fetch('/notifications')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const notificationCount = data.notifications.length;
+                        document.getElementById('notificationCount').textContent = notificationCount;
+
+                        const notificationList = document.getElementById('notificationList');
+                        notificationList.innerHTML = '';
+
+                        if (notificationCount > 0) {
+                            data.notifications.forEach(notification => {
+                                const notificationHtml = `
+                                    <div class="mb-2 p-2 border-b">
+                                        <p class="text-gray-700">${notification.data.message}</p>
+                                        <small class="text-gray-500">${new Date(notification.created_at).toLocaleString()}</small>
+                                    </div>
+                                `;
+                                notificationList.insertAdjacentHTML('beforeend', notificationHtml);
+                            });
+                        } else {
+                            notificationList.innerHTML = '<p class="text-gray-500 text-sm">No new notifications</p>';
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching notifications:', error));
+        }
+
+        document.getElementById('markAsReadButton').addEventListener('click', () => {
+            fetch('/notifications/mark-as-read', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Content-Type': 'application/json',
+                },
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to mark notifications as read');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('notificationList').innerHTML = '<p class="text-gray-500 text-sm">No new notifications</p>';
+                        document.getElementById('notificationCount').textContent = 0;
+                    }
+                })
+                .catch(error => console.error('Error marking notifications as read:', error));
+        });
+
+        document.addEventListener('DOMContentLoaded', loadNotifications);
+
+        // Dropdown menu for user
+        const dropdownButton = document.getElementById('dropdownButton');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+
+        dropdownButton.addEventListener('click', event => {
+            event.stopPropagation();
+            dropdownMenu.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', event => {
+            if (!dropdownMenu.contains(event.target) && !dropdownButton.contains(event.target)) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+
+        // Load posts
         function loadPosts() {
             fetch('/posts')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        document.getElementById('postsFeed').innerHTML = ''; // Clear existing posts
                         data.posts.forEach(post => renderPost(post));
                     }
                 })
                 .catch(error => console.error('Error fetching posts:', error));
         }
 
-        // Render a single post
         function renderPost(post) {
-    const user = post.user || post.geek; // Adjust based on your relationship
-    const postHtml = `
-        <div class="p-4 border rounded mb-4 bg-white" data-post-id="${post.id}">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h4 class="font-bold text-gray-800">${user ? user.name : 'Unknown User'}</h4>
-                    <p class="text-gray-600 text-sm">${new Date(post.created_at).toLocaleString()}</p>
-                </div>
-                ${
-                    post.user_id === {{ Auth::id() }} ? `
-                    <div class="relative">
-                        <button id="settingsButton-${post.id}" class="text-gray-500 hover:text-gray-800">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                        <div id="settingsDropdown-${post.id}" class="hidden absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
-                            <button class="block px-4 py-2 text-left text-gray-800 hover:bg-gray-100 edit-post-btn" data-id="${post.id}">Edit</button>
-                            <button class="block px-4 py-2 text-left text-red-600 hover:bg-gray-100 delete-post-btn" data-id="${post.id}">Delete</button>
-                        </div>
+            const postHtml = `
+                <div class="p-4 border rounded mb-4 bg-white" data-post-id="${post.id}">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-gray-800">${post.user ? post.user.name : 'Unknown User'}</h4>
+                        <p class="text-gray-600 text-sm">${new Date(post.created_at).toLocaleString()}</p>
                     </div>
-                    ` : ''
-                }
-            </div>
-            <!-- Editable Post Content -->
-            <div class="mt-2">
-                <p class="text-gray-700 post-content">${post.content}</p>
-                <textarea class="hidden w-full p-2 border rounded edit-content">${post.content}</textarea>
-            </div>
-            <!-- Save and Cancel Buttons -->
-            <div class="hidden mt-2 flex space-x-2 edit-actions">
-                <button class="bg-blue-500 text-white py-1 px-3 rounded save-edit-btn" data-id="${post.id}">Save</button>
-                <button class="bg-gray-500 text-white py-1 px-3 rounded cancel-edit-btn" data-id="${post.id}">Cancel</button>
-            </div>
-            ${
-                post.picture
-                    ? `<img src="/storage/${post.picture}" alt="Post Image" class="mt-4 w-32 h-32 rounded">`
-                    : ''
-            }
-            <div class="mt-4 flex space-x-4">
-                <button class="text-blue-500 hover:underline">Like</button>
-                <button class="text-blue-500 hover:underline">Comment</button>
-            </div>
-        </div>
-    `;
-    document.getElementById('postsFeed').insertAdjacentHTML('afterbegin', postHtml);
+                    <p class="text-gray-700">${post.content}</p>
+                    ${post.picture ? `<img src="/storage/${post.picture}" class="mt-4 w-32 h-32 rounded" />` : ''}
+                    <div class="mt-4 flex space-x-4">
+                        <button class="like-btn text-blue-500" data-id="${post.id}">
+                            ${post.is_liked_by_user ? 'Unlike' : 'Like'} (${post.likes_count || 0})
+                        </button>
+                        <button class="comment-btn text-blue-500" data-id="${post.id}">
+                            Comments (<span id="commentCount-${post.id}">${post.comments ? post.comments.length : 0}</span>)
+                        </button>
+                    </div>
+                    <div id="commentsSection-${post.id}" class="hidden mt-4 bg-gray-50 p-4 rounded shadow">
+                        <div id="commentsList-${post.id}">
+                            ${post.comments
+                                ? post.comments
+                                      .map(
+                                          comment => `
+                                    <div class="mb-2 p-2 border rounded">
+                                        <strong>${comment.user ? comment.user.name : 'Unknown User'}</strong>
+                                        <p>${comment.content}</p>
+                                    </div>
+                                `
+                                      )
+                                      .join('')
+                                : ''}
+                        </div>
+                        <textarea id="newComment-${post.id}" class="w-full p-2 border rounded mb-2" placeholder="Write a comment..."></textarea>
+                        <button class="bg-blue-500 text-white py-1 px-4 rounded add-comment-btn" data-id="${post.id}">
+                            Post Comment
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('postsFeed').insertAdjacentHTML('beforeend', postHtml);
 
-    // Add dropdown event listener
-    const settingsButton = document.getElementById(`settingsButton-${post.id}`);
-    const settingsDropdown = document.getElementById(`settingsDropdown-${post.id}`);
-    if (settingsButton && settingsDropdown) {
-        settingsButton.addEventListener('click', () => {
-            settingsDropdown.classList.toggle('hidden');
-        });
-    }
-
-    // Add Edit Button Functionality
-    const editButton = document.querySelector(`[data-id="${post.id}"].edit-post-btn`);
-    const deleteButton = document.querySelector(`[data-id="${post.id}"].delete-post-btn`);
-    const postElement = document.querySelector(`[data-post-id="${post.id}"]`);
-    const postContent = postElement.querySelector('.post-content');
-    const editContent = postElement.querySelector('.edit-content');
-    const editActions = postElement.querySelector('.edit-actions');
-
-    if (editButton) {
-        editButton.addEventListener('click', () => {
-            postContent.classList.add('hidden');
-            editContent.classList.remove('hidden');
-            editActions.classList.remove('hidden');
-        });
-    }
-
-    // Add Cancel Button Functionality
-    const cancelButton = postElement.querySelector('.cancel-edit-btn');
-    if (cancelButton) {
-        cancelButton.addEventListener('click', () => {
-            postContent.classList.remove('hidden');
-            editContent.classList.add('hidden');
-            editActions.classList.add('hidden');
-        });
-    }
-
-    // Add Save Button Functionality
-    const saveButton = postElement.querySelector('.save-edit-btn');
-    if (saveButton) {
-        saveButton.addEventListener('click', () => {
-            const newContent = editContent.value;
-            fetch(`/posts/${post.id}`, {
-                method: 'PUT',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ content: newContent }),
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to update post');
-                    }
-                    return response.json();
+            document.querySelector(`.like-btn[data-id="${post.id}"]`).addEventListener('click', () => {
+                const likeButton = event.target;
+                fetch(`/posts/${post.id}/like`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
                 })
-                .then(data => {
-                    if (data.success) {
-                        postContent.textContent = newContent;
-                        postContent.classList.remove('hidden');
-                        editContent.classList.add('hidden');
-                        editActions.classList.add('hidden');
-                    }
-                })
-                .catch(error => console.error('Error updating post:', error));
-        });
-    }
-}
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            likeButton.textContent = `${data.is_liked_by_user ? 'Unlike' : 'Like'} (${data.likes_count})`;
+                        }
+                    })
+                    .catch(error => console.error('Error toggling like:', error));
+            });
 
-        // Post a new post
+            document.querySelector(`.add-comment-btn[data-id="${post.id}"]`).addEventListener('click', () => {
+                const content = document.getElementById(`newComment-${post.id}`).value;
+                fetch(`/posts/${post.id}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content }),
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const commentHtml = `
+                                <div class="mb-2 p-2 border rounded">
+                                    <strong>${data.comment.user.name}</strong>
+                                    <p>${data.comment.content}</p>
+                                </div>
+                            `;
+                            document.getElementById(`commentsList-${post.id}`).insertAdjacentHTML('beforeend', commentHtml);
+                            document.getElementById(`newComment-${post.id}`).value = '';
+                            const commentCount = document.getElementById(`commentCount-${post.id}`);
+                            commentCount.textContent = parseInt(commentCount.textContent) + 1;
+                        }
+                    })
+                    .catch(error => console.error('Error adding comment:', error));
+            });
+
+            document.querySelector(`.comment-btn[data-id="${post.id}"]`).addEventListener('click', () => {
+                document.getElementById(`commentsSection-${post.id}`).classList.toggle('hidden');
+            });
+        }
+
         document.getElementById('postButton').addEventListener('click', () => {
             const content = document.getElementById('postContent').value;
             const picture = document.getElementById('postPicture').files[0];
             const formData = new FormData();
-
             formData.append('content', content);
-            if (picture) {
-                formData.append('picture', picture);
-            }
+            if (picture) formData.append('picture', picture);
 
             fetch('/posts', {
                 method: 'POST',
@@ -212,7 +289,6 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Render the new post
                         renderPost(data.post);
                         document.getElementById('postContent').value = '';
                         document.getElementById('postPicture').value = '';
@@ -221,89 +297,6 @@
                 .catch(error => console.error('Error posting:', error));
         });
 
-        // Edit and Delete Event Handlers
-        document.addEventListener('click', (event) => {
-            if (event.target.classList.contains('edit-post-btn')) {
-                const postId = event.target.getAttribute('data-id');
-                editPost(postId);
-            } else if (event.target.classList.contains('delete-post-btn')) {
-                const postId = event.target.getAttribute('data-id');
-                deletePost(postId);
-            }
-        });
-
-//         function editPost(postId) {
-//     // Find the post content
-//     const postElement = document.querySelector(`[data-post-id="${postId}"]`);
-//     const currentContent = postElement ? postElement.querySelector('.post-content').textContent : '';
-
-//     // Prompt the user with the current content
-//     const newContent = prompt('Edit your post:', currentContent);
-
-//     if (newContent !== null) { // Allow the user to cancel editing
-//         fetch(`/posts/${postId}`, {
-//             method: 'PUT',
-//             headers: {
-//                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-//                 'Content-Type': 'application/json',
-//             },
-//             body: JSON.stringify({ content: newContent }),
-//         })
-//             .then(response => {
-//                 if (!response.ok) {
-//                     throw new Error('Failed to update post');
-//                 }
-//                 return response.json();
-//             })
-//             .then(data => {
-//                 if (data.success) {
-//                     alert('Post updated successfully!');
-//                     // Update the post content on the page without reloading
-//                     if (postElement) {
-//                         postElement.querySelector('.post-content').textContent = newContent;
-//                     }
-//                 }
-//             })
-//             .catch(error => console.error('Error updating post:', error));
-//     }
-// }
-function editPost(postId) {
-    const postElement = document.querySelector(`[data-post-id="${postId}"]`);
-    const postContent = postElement.querySelector('.post-content');
-    const editContent = postElement.querySelector('.edit-content');
-    const editActions = postElement.querySelector('.edit-actions');
-
-    // Show the edit textarea and buttons
-    postContent.classList.add('hidden');
-    editContent.classList.remove('hidden');
-    editActions.classList.remove('hidden');
-}
-
-                function deletePost(postId) {
-                    if (confirm('Are you sure you want to delete this post?')) {
-                        fetch(`/posts/${postId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            },
-                        })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Failed to delete post');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            alert('Post deleted successfully!');
-                            document.getElementById('postsFeed').innerHTML = ''; // Clear posts feed
-                            loadPosts(); // Reload posts
-                        }
-                    })
-                    .catch(error => console.error('Error deleting post:', error));
-                    }
-                }
-        // Load posts on page load
         document.addEventListener('DOMContentLoaded', loadPosts);
     </script>
 </body>

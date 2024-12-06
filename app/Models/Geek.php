@@ -29,9 +29,9 @@ class Geek extends Model
 
     // A Geek can have many Comments
     public function comments()
-    {
-        return $this->hasMany(Comment::class);
-    }
+{
+    return $this->hasMany(Comment::class, 'user_id');
+}
 
     // A Geek can have many Likes (on posts or comments)
     public function likes()

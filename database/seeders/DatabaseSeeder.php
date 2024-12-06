@@ -20,8 +20,7 @@ class DatabaseSeeder extends Seeder
                     Comment::factory(3)->create([
                         'post_id' => $post->id, 'geek_id' => $geek->id,]);
                     Like::factory(2)->create([
-                        'likeable_id' => $post->id, 
-                        'likeable_type' => Post::class, 
+
                         'geek_id' => $geek->id,
                     ]);
                 }
