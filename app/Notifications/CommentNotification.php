@@ -11,11 +11,13 @@ class CommentNotification extends Notification
 {
     use Queueable;
 
-    protected $commenterName;
+    private $user;
+    private $comment;
 
-    public function __construct($commenterName)
+    public function __construct($user, $comment)
     {
-        $this->commenterName = $commenterName;
+        $this->user = $user;
+        $this->comment = $comment;
     }
 
     public function via($notifiable)
@@ -23,10 +25,11 @@ class CommentNotification extends Notification
         return ['database'];
     }
 
-    public function toArray($notifiable)
+    public function toDatabase($notifiable)
     {
         return [
-            'message' => "{$this->commenterName} commented on your post."
+            'message' => "{$this->user->name} commented on your post.",
+            'comment_id' => $this->comment->id,
         ];
     }
 }

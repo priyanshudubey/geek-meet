@@ -101,6 +101,7 @@
                         <h2 class="display-4 mb-4">Connect with Fellow Geeks</h2>
                         <p class="lead mb-4">Join Geek Meet and discover a community of like-minded individuals who share your passions.</p>
                         <a href="/signup" class="btn btn-primary btn-lg">Sign Up Now</a>
+                        <a href="/login" class="btn btn-primary btn-lg">Log In</a>
                     </div>
                     <div class="col-md-6">
                         <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80" alt="Geeks collaborating" class="img-fluid rounded shadow-lg">

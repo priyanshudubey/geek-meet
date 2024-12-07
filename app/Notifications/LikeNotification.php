@@ -11,11 +11,13 @@ class LikeNotification extends Notification
 {
     use Queueable;
 
-    protected $likerName;
+    private $user;
+    private $post;
 
-    public function __construct($likerName)
+    public function __construct($user, $post)
     {
-        $this->likerName = $likerName;
+        $this->user = $user;
+        $this->post = $post;
     }
 
     public function via($notifiable)
@@ -23,10 +25,11 @@ class LikeNotification extends Notification
         return ['database'];
     }
 
-    public function toArray($notifiable)
+    public function toDatabase($notifiable)
     {
         return [
-            'message' => "{$this->likerName} liked your post."
+            'message' => "{$this->user->name} liked your post.",
+            'post_id' => $this->post->id,
         ];
     }
 }

@@ -21,15 +21,15 @@ class CommentController extends Controller
         'content' => $validated['content'],
     ]);
 
-    // Notify the post owner
     if ($post->user_id !== auth()->id()) {
-        $post->user->notify(new CommentNotification(auth()->user()->name));
+        Log::info('Sending comment notification to user:', ['user_id' => $post->user_id]);
+        $post->user->notify(new CommentNotification(auth()->user(), $comment));
     }
 
     return response()->json([
         'success' => true,
-        'comment' => $comment->load('user'), // Ensure the user relationship is loaded
-        'comments_count' => $post->comments()->count(), // Update comments count dynamically
+        'comment' => $comment->load('user'),
     ]);
 }
+
 }

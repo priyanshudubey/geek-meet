@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{{-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -300,4 +300,21 @@
         document.addEventListener('DOMContentLoaded', loadPosts);
     </script>
 </body>
-</html>
+</html> --}}
+
+@extends('layouts.app')
+
+@section('title', 'Home - Geek Meet')
+
+@section('content')
+    <h2 class="text-sky-500 text-2xl font-semibold mb-4">Hello, {{ Auth::user()->name }}!</h2>
+    <p class="text-gray-700 text-lg mb-6">Explore, connect, and share your passion with fellow tech enthusiasts.</p>
+
+    <!-- Create Post Section -->
+    @include('partials.create-post')
+
+    <!-- Posts Feed -->
+    <!-- Posts Feed -->
+    @include('partials.posts', ['posts' => $posts])
+<p>Loading posts from partials.posts</p>
+@endsection

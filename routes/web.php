@@ -5,8 +5,9 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\LikeController;
-use App\Models\Post;
 use App\Http\Controllers\NotificationController;
+use App\Models\Post;
+use App\Http\Controllers\ProfileController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -23,26 +24,39 @@ Route::get('/login', function () {
     return view('login');
 })->name('login');
 
+Route::get('/profile', function () {
+    return view('profile');
+})->middleware('auth')->name('profile');
+
+Route::put('/profile/update', [ProfileController::class, 'update'])->middleware('auth')->name('profile.update');
+
 // Handle login
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
-// Show home page (protected route)
-Route::get('/home', function () {
-    return view('home');
-})->middleware('auth')->name('home');
+// Protected routes
+Route::middleware('auth')->get('/home', function () {
+    $posts = Post::with(['user', 'comments', 'likes'])->get();
+    return view('home', compact('posts'));
+})->name('home');
 
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::middleware('auth')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::post('/posts', [PostController::class, 'store'])->middleware('auth');
-Route::get('/posts', [PostController::class, 'fetchPosts'])->middleware('auth');
-Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
-Route::put('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
-Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
+    // Posts
+    Route::post('/posts', [PostController::class, 'store'])->middleware('auth');
+    Route::get('/posts', [PostController::class, 'fetchPosts'])->middleware('auth')->name('posts.fetch');
+    Route::put('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
+    Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
 
-Route::post('/posts/{post}/comments', [CommentController::class, 'store']);
+    // Comments
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->middleware('auth');
 
-Route::post('/posts/{post}/like', [LikeController::class, 'toggleLike'])->middleware('auth');
 
-Route::get('/notifications', [NotificationController::class, 'index']);
-Route::post('/notifications/read', [NotificationController::class, 'markAsRead']);
-Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    // Likes
+    Route::post('/posts/{post}/like', [LikeController::class, 'toggleLike']);
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+});

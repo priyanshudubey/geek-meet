@@ -23,7 +23,6 @@ class PostController extends Controller
     $post->content = $request->content;
 
     if ($request->hasFile('picture')) {
-        // Store the image in the "posts" directory in the public disk
         $post->picture = $request->file('picture')->store('posts', 'public');
     }
 
@@ -31,15 +30,15 @@ class PostController extends Controller
 
     return response()->json([
         'success' => true,
-        'post' => $post->load('user'), // Ensure the user relationship is included
+        'post' => $post->load('user'), // Load the associated user for rendering
     ]);
 }
 
 public function fetchPosts()
 {
-    $posts = Post::with(['user', 'likes', 'comments.user'])->get()->map(function ($post) {
+    $posts = Post::with(['user', 'likes', 'comments.user'])->latest()->get()->map(function ($post) {
         $post->likes_count = $post->likes->count();
-        $post->is_liked_by_user = $post->likes->where('user_id', Auth::id())->isNotEmpty();
+        $post->is_liked_by_user = $post->likes->where('user_id', auth()->id())->isNotEmpty();
         return $post;
     });
 
@@ -49,10 +48,18 @@ public function fetchPosts()
     ]);
 }
 
-    public function update(Request $request, Post $post)
+
+
+public function update(Request $request, Post $post)
 {
+    // Check if the logged-in user owns the post
+    if ($post->user_id !== auth()->id()) {
+        return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+    }
+
+    // Validate and update the post
     $request->validate([
-        'content' => 'required|string|max:255',
+        'content' => 'required|string|max:500',
     ]);
 
     $post->content = $request->content;
@@ -61,30 +68,22 @@ public function fetchPosts()
     return response()->json(['success' => true, 'post' => $post]);
 }
 
+
 public function destroy(Post $post)
 {
-    // Authorize the user to delete the post
-    \Log::info('Attempting to delete post', [
-        'post_id' => $post->id,
-        'user_id' => Auth::id(),
-        'post_owner_id' => $post->user_id,
-    ]);
-
     $this->authorize('delete', $post);
 
-    // Delete the post
     $post->delete();
 
-    // Return a success response
     return response()->json(['success' => true]);
 }
 
-    public function index()
+
+
+public function index()
 {
-    $posts = Post::with('user')->orderBy('created_at', 'desc')->get(); // Load posts with user data
-    return response()->json([
-        'success' => true,
-        'posts' => $posts,
-    ]);
+    $posts = Post::with(['user', 'comments'])->get();
+    dd($posts); 
+    return view('home', compact('posts'));
 }
 }

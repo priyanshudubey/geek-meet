@@ -6,6 +6,7 @@ use App\Models\Post;
 use Illuminate\Http\Request;
 use App\Models\Notification;
 use App\Notifications\LikeNotification;
+use Illuminate\Support\Facades\Log;
 
 class LikeController extends Controller
 {
@@ -33,7 +34,8 @@ class LikeController extends Controller
 
     // Notify the post owner
     if ($post->user_id !== $user->id) {
-        $post->user->notify(new LikeNotification($user->name));
+        Log::info('Sending like notification to user:', ['user_id' => $post->user_id]);
+        $post->user->notify(new LikeNotification($user, $post));
     }
 
     return response()->json([
