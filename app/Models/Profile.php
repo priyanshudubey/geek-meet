@@ -9,10 +9,17 @@ class Profile extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'user_id', // Allow mass assignment of user_id
+        'bio',
+        'location',
+        'profile_image',
+    ];
+
     // Define a one-to-one relationship with Geek
-    public function geek()
+    public function user()
     {
-        return $this->belongsTo(Geek::class, 'geek_id');
+        return $this->belongsTo(User::class);
     }
     // A Profile can have many Posts
     public function posts()

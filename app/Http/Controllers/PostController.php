@@ -13,14 +13,23 @@ class PostController extends Controller
     use AuthorizesRequests;
     public function store(Request $request)
 {
+    // Log the incoming request data
+    \Log::info('Request Data:', $request->all());
+
     $request->validate([
-        'content' => 'required|string|max:255',
+        'content' => 'nullable|string|max:255',
         'picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'gif_url' => 'nullable|string',
     ]);
+
+    // Log the gif_url before saving
+    \Log::info('GIF URL:', ['gif_url' => $request->gif_url]);
+    \Log::info('Request Data:', $request->all()); 
 
     $post = new Post();
     $post->user_id = Auth::id();
     $post->content = $request->content;
+    $post->gif_url = $request->gif_url;
 
     if ($request->hasFile('picture')) {
         $post->picture = $request->file('picture')->store('posts', 'public');
@@ -34,9 +43,10 @@ class PostController extends Controller
     ]);
 }
 
+
 public function fetchPosts()
 {
-    $posts = Post::with(['user', 'likes', 'comments.user'])->latest()->get()->map(function ($post) {
+    $posts = Post::with(['user', 'likes', 'comments.user', 'user.profile'])->latest()->get()->map(function ($post) {
         $post->likes_count = $post->likes->count();
         $post->is_liked_by_user = $post->likes->where('user_id', auth()->id())->isNotEmpty();
         return $post;

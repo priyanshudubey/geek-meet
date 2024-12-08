@@ -7,19 +7,18 @@
     <div class="bg-white shadow rounded-lg p-6">
         <!-- Profile Header -->
         <div class="flex items-center space-x-6 mb-6">
-            <!-- Profile Picture -->
             <div>
-                <img
-                    class="w-24 h-24 rounded-full border-4 border-gray-200 shadow"
-                    src="{{ Auth::user()->profile_picture ?? '/default-avatar.png' }}"
-                    alt="Profile Picture"
-                />
+                @if (Auth::user()->profile && Auth::user()->profile->profile_image)
+                    <img src="{{ asset('storage/' . Auth::user()->profile->profile_image) }}" class="h-32 w-32" alt="Profile Image">
+                @else
+                    <p>No profile image available.</p>
+                @endif
             </div>
-            <!-- User Info -->
             <div>
                 <h1 class="text-2xl font-bold text-gray-800">{{ Auth::user()->name }}</h1>
                 <p class="text-gray-600 text-sm">{{ Auth::user()->email }}</p>
-                <p class="text-gray-500 mt-1">{{ Auth::user()->bio ?? 'No bio available.' }}</p>
+                <p class="text-gray-500 mt-1">{{ $profile->bio ?? 'No bio available.' }}</p>
+                <p class="text-gray-500 mt-1">{{ $profile->location ?? 'No location specified.' }}</p>
             </div>
         </div>
 
@@ -30,30 +29,6 @@
                 @csrf
                 @method('PUT')
 
-                <!-- Name -->
-                <div class="mb-4">
-                    <label for="name" class="block text-sm font-medium text-gray-600">Name</label>
-                    <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        value="{{ Auth::user()->name }}"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                </div>
-
-                <!-- Email -->
-                <div class="mb-4">
-                    <label for="email" class="block text-sm font-medium text-gray-600">Email</label>
-                    <input
-                        type="email"
-                        name="email"
-                        id="email"
-                        value="{{ Auth::user()->email }}"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                </div>
-
                 <!-- Bio -->
                 <div class="mb-4">
                     <label for="bio" class="block text-sm font-medium text-gray-600">Bio</label>
@@ -62,16 +37,28 @@
                         id="bio"
                         rows="4"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    >{{ Auth::user()->bio }}</textarea>
+                    >{{ $profile->bio ?? 'No bio available.' }}</textarea>
+                </div>
+
+                <!-- Location -->
+                <div class="mb-4">
+                    <label for="location" class="block text-sm font-medium text-gray-600">Location</label>
+                    <input
+                        type="text"
+                        name="location"
+                        id="location"
+                        value="{{ $profile->location ?? 'No location specified.' }}"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
                 </div>
 
                 <!-- Profile Picture -->
                 <div class="mb-6">
-                    <label for="profile_picture" class="block text-sm font-medium text-gray-600">Profile Picture</label>
+                    <label for="profile_image" class="block text-sm font-medium text-gray-600">Profile Picture</label>
                     <input
                         type="file"
-                        name="profile_picture"
-                        id="profile_picture"
+                        name="profile_image"
+                        id="profile_image"
                         class="mt-1 block w-full"
                     />
                 </div>

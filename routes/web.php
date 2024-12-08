@@ -24,11 +24,10 @@ Route::get('/login', function () {
     return view('login');
 })->name('login');
 
-Route::get('/profile', function () {
-    return view('profile');
-})->middleware('auth')->name('profile');
-
-Route::put('/profile/update', [ProfileController::class, 'update'])->middleware('auth')->name('profile.update');
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+});
 
 // Handle login
 Route::post('/login', [AuthController::class, 'login'])->name('login');

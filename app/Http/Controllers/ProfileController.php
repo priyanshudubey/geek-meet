@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Profile;
 
 class ProfileController extends Controller
 {
@@ -14,31 +15,38 @@ class ProfileController extends Controller
 
         // Validate input
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
             'bio' => 'nullable|string|max:500',
-            'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'location' => 'nullable|string|max:255',
+            'profile_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        // Update user info
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->bio = $request->bio;
+        // Find or create the profile associated with the user
+        $profile = Profile::firstOrCreate(['user_id' => $user->id]);
 
-        // Handle profile picture upload
-        if ($request->hasFile('profile_picture')) {
-            // Delete old profile picture if exists
-            if ($user->profile_picture) {
-                Storage::delete($user->profile_picture);
+        // Update profile details
+        $profile->bio = $request->bio;
+        $profile->location = $request->location;
+
+        // Handle profile image upload
+        if ($request->hasFile('profile_image')) {
+            // Delete old profile image if it exists
+            if ($profile->profile_image) {
+                Storage::delete($profile->profile_image);
             }
 
-            // Store new profile picture
-            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
-            $user->profile_picture = $path;
+            // Store new profile image
+            $path = $request->file('profile_image')->store('profile_images', 'public');
+            $profile->profile_image = $path;
         }
 
-        $user->save();
+        $profile->save();
 
         return redirect()->back()->with('success', 'Profile updated successfully!');
+    }
+
+    public function show()
+    {
+        $profile = Profile::where('user_id', Auth::id())->first();
+        return view('profile', compact('profile'));
     }
 }

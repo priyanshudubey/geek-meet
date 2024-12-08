@@ -316,5 +316,4 @@
     <!-- Posts Feed -->
     <!-- Posts Feed -->
     @include('partials.posts', ['posts' => $posts])
-<p>Loading posts from partials.posts</p>
 @endsection
