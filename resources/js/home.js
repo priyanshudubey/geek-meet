@@ -189,7 +189,9 @@ function renderPost(post) {
                 <!-- Left Section: Profile Image and Name -->
                 <div class="flex items-center space-x-4">
                     ${profileHtml}
-                    <h4 class="font-bold text-gray-800">${post.user ? post.user.name : 'Unknown User'}</h4>
+                    <a href="/user/${post.user_id}" class="font-bold text-gray-800 hover:underline">
+                        ${post.user ? post.user.name : 'Unknown User'}
+                    </a>
                     <p class="text-gray-600 text-sm">${new Date(post.created_at).toLocaleString()}</p>
                 </div>
                 <!-- Right Section: Edit and Delete Buttons -->

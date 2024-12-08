@@ -19,6 +19,8 @@ Route::get('/signup', function () {
 
 Route::post('/signup', [AuthController::class, 'signup'])->name('signup');
 
+Route::get('/user/{id}', [ProfileController::class, 'show'])->name('user.profile');
+
 // Show login form
 Route::get('/login', function () {
     return view('login');

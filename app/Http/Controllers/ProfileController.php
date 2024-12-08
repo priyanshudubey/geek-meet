@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Profile;
+use App\Models\User;
+use App\Models\Post;
 
 class ProfileController extends Controller
 {
@@ -44,9 +46,14 @@ class ProfileController extends Controller
         return redirect()->back()->with('success', 'Profile updated successfully!');
     }
 
-    public function show()
+    public function show($id)
     {
-        $profile = Profile::where('user_id', Auth::id())->first();
-        return view('profile', compact('profile'));
+        $user = User::with('profile')->findOrFail($id);
+        $posts = Post::with(['user', 'comments', 'likes'])
+            ->where('user_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('profile.view', compact('user', 'posts'));
     }
 }
