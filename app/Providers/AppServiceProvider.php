@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Services\GiphyService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,9 +15,11 @@ class AppServiceProvider extends ServiceProvider
         App\Models\Post::class => App\Policies\PostPolicy::class,
     ];
     
-    public function register(): void
+    public function register()
     {
-        //
+        $this->app->singleton(GiphyService::class, function ($app) {
+            return new GiphyService();
+        });
     }
 
     /**

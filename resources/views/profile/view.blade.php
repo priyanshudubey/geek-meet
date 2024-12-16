@@ -12,6 +12,7 @@
             <div class="h-16 w-16 flex items-center justify-center rounded-full bg-gray-500 text-white font-bold text-lg">
                 {{ strtoupper(substr($user->name, 0, 1)) }}
             </div>
+            
         @endif
         <div>
             <h2 class="text-xl font-bold">{{ $user->name }}</h2>

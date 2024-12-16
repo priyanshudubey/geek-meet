@@ -11,25 +11,25 @@ use App\Notifications\CommentNotification;
 class CommentController extends Controller
 {
     public function store(Request $request, Post $post)
-{
-    $validated = $request->validate([
-        'content' => 'required|string|max:255',
-    ]);
+    {
+        $validated = $request->validate([
+            'content' => 'required|string|max:255',
+        ]);
 
-    $comment = $post->comments()->create([
-        'user_id' => auth()->id(),
-        'content' => $validated['content'],
-    ]);
+        $comment = $post->comments()->create([
+            'user_id' => auth()->id(),
+            'content' => $validated['content'],
+        ]);
 
-    if ($post->user_id !== auth()->id()) {
-        Log::info('Sending comment notification to user:', ['user_id' => $post->user_id]);
-        $post->user->notify(new CommentNotification(auth()->user(), $comment));
+        if ($post->user_id !== auth()->id()) {
+            Log::info('Sending comment notification to user:', ['user_id' => $post->user_id]);
+            $post->user->notify(new CommentNotification(auth()->user(), $comment));
+        }
+
+        return response()->json([
+            'success' => true,
+            'comment' => $comment->load('user'),
+        ]);
     }
-
-    return response()->json([
-        'success' => true,
-        'comment' => $comment->load('user'),
-    ]);
-}
 
 }

@@ -20,14 +20,19 @@ class User extends Authenticatable
     protected $fillable = ['name', 'email', 'password', 'dob'];
 
     public function posts()
-{
-    return $this->hasMany(Post::class, 'user_id');
-}
+    {
+        return $this->hasMany(Post::class, 'user_id');
+    }
 
-public function profile()
-{
-    return $this->hasOne(Profile::class);
-}
+    public function profile()
+    {
+        return $this->hasOne(Profile::class);
+    }
+
+    public function notification()
+    {
+        return $this->morphMany(Notification::class, 'notifiable');
+    }
     /**
      * The attributes that should be hidden for serialization.
      *

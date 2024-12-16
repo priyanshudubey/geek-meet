@@ -2,9 +2,7 @@
     @foreach ($posts as $post)
         <div class="p-4 border rounded mb-4 bg-white" data-post-id="{{ $post->id }}">
             <div class="flex items-center justify-between">
-                <!-- Profile Image and Name -->
                 <div class="flex items-center space-x-4">
-                    <!-- Profile Image -->
                     @if ($post->user->profile && $post->user->profile->profile_image)
                         <img 
                             src="{{ asset('storage/' . $post->user->profile->profile_image) }}" 
@@ -18,7 +16,6 @@
                             alt="Default Avatar"
                         >
                     @endif
-                    <!-- Name -->
                     <h4 class="font-bold text-gray-800">{{ $post->user->name ?? 'Unknown User' }}</h4>
                 </div>
                 <p class="text-gray-600 text-sm">{{ $post->created_at->format('F d, Y h:i A') }}</p>

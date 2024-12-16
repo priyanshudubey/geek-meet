@@ -12,88 +12,65 @@ class PostController extends Controller
 {
     use AuthorizesRequests;
     public function store(Request $request)
-{
-    // Log the incoming request data
-    \Log::info('Request Data:', $request->all());
-
-    $request->validate([
-        'content' => 'nullable|string|max:255',
-        'picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        'gif_url' => 'nullable|string',
-    ]);
-
-    // Log the gif_url before saving
-    \Log::info('GIF URL:', ['gif_url' => $request->gif_url]);
-    \Log::info('Request Data:', $request->all()); 
-
-    $post = new Post();
-    $post->user_id = Auth::id();
-    $post->content = $request->content;
-    $post->gif_url = $request->gif_url;
-
-    if ($request->hasFile('picture')) {
-        $post->picture = $request->file('picture')->store('posts', 'public');
+    {
+        $request->validate([
+            'content' => 'nullable|string|max:255',
+            'picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'gif_url' => 'nullable|string',
+        ]);
+        $post = new Post();
+        $post->user_id = Auth::id();
+        $post->content = $request->content;
+        $post->gif_url = $request->gif_url;
+        if ($request->hasFile('picture')) {
+            $post->picture = $request->file('picture')->store('posts', 'public');
+        }
+        $post->save();
+        return response()->json([
+            'success' => true,
+            'post' => $post->load('user'), 
+        ]);
     }
 
-    $post->save();
 
-    return response()->json([
-        'success' => true,
-        'post' => $post->load('user'), // Load the associated user for rendering
-    ]);
-}
+    public function fetchPosts()
+    {
+        $posts = Post::with(['user', 'likes', 'comments.user', 'user.profile'])->latest()->get()->map(function ($post) {
+            $post->likes_count = $post->likes->count();
+            $post->is_liked_by_user = $post->likes->where('user_id', auth()->id())->isNotEmpty();
+            return $post;
+        });
 
-
-public function fetchPosts()
-{
-    $posts = Post::with(['user', 'likes', 'comments.user', 'user.profile'])->latest()->get()->map(function ($post) {
-        $post->likes_count = $post->likes->count();
-        $post->is_liked_by_user = $post->likes->where('user_id', auth()->id())->isNotEmpty();
-        return $post;
-    });
-
-    return response()->json([
-        'success' => true,
-        'posts' => $posts,
-    ]);
-}
-
-
-
-public function update(Request $request, Post $post)
-{
-    // Check if the logged-in user owns the post
-    if ($post->user_id !== auth()->id()) {
-        return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        return response()->json([
+            'success' => true,
+            'posts' => $posts,
+        ]);
     }
 
-    // Validate and update the post
-    $request->validate([
-        'content' => 'required|string|max:500',
-    ]);
+    public function update(Request $request, Post $post)
+    {
+        if ($post->user_id !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+        $request->validate([
+            'content' => 'required|string|max:500',
+        ]);
+        $post->content = $request->content;
+        $post->save();
+        return response()->json(['success' => true, 'post' => $post]);
+    }
 
-    $post->content = $request->content;
-    $post->save();
+    public function destroy(Post $post)
+    {
+        $this->authorize('delete', $post);
+        $post->delete();
+        return response()->json(['success' => true]);
+    }
 
-    return response()->json(['success' => true, 'post' => $post]);
-}
-
-
-public function destroy(Post $post)
-{
-    $this->authorize('delete', $post);
-
-    $post->delete();
-
-    return response()->json(['success' => true]);
-}
-
-
-
-public function index()
-{
-    $posts = Post::with(['user', 'comments'])->get();
-    dd($posts); 
-    return view('home', compact('posts'));
-}
+    public function index()
+    {
+        $posts = Post::with(['user', 'comments'])->get();
+        dd($posts); 
+        return view('home', compact('posts'));
+    }
 }

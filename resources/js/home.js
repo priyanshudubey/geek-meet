@@ -273,16 +273,13 @@ function renderPost(post) {
 function addCommentListeners() {
     const commentButtons = document.querySelectorAll('.add-comment-btn');
     commentButtons.forEach((button) => {
-        console.log('Adding comment listener to:', button); // Debugging
         button.addEventListener('click', () => {
             const postId = button.dataset.id;
             const content = document.getElementById(`newComment-${postId}`).value.trim();
-
             if (!content) {
                 alert('Comment cannot be empty');
                 return;
             }
-
             fetch(`/posts/${postId}/comments`, {
                 method: 'POST',
                 headers: {
@@ -293,7 +290,6 @@ function addCommentListeners() {
             })
                 .then((response) => response.json())
                 .then((data) => {
-                    console.log('Comment response:', data); // Debugging
                     if (data.success) {
                         const commentHtml = `
                             <div class="mb-2 p-2 border rounded">
